@@ -6,23 +6,23 @@ import { Project } from "../models/projectModel.js";
 import { ProjectMember } from "../models/projectMemberModel.js";
 
 export const verifyJWT = asyncHandler(async (req, _, next) => {
-        // Take the token from cookie
-        const token = req.cookies?.accessToken
-        if(!token){
-            throw new ApiError(401, "Unauthorised access")
-        }
+    // Take the token from cookie
+    const token = req.cookies?.accessToken
+    if (!token) {
+        throw new ApiError(401, "Unauthorised access")
+    }
 
-        // Decode the token
-        const decoded =  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
+    // Decode the token
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
 
-        // Find the user and make req.user obj
-        const user = await User.findById(decoded._id).select("-password -refreshToken")
-        if(!user){
-            throw new ApiError(401, "Invalid access token")
-        }
+    // Find the user and make req.user obj
+    const user = await User.findById(decoded._id).select("-password -refreshToken")
+    if (!user) {
+        throw new ApiError(401, "Invalid access token")
+    }
 
-        req.user = user
-        next()
+    req.user = user
+    next()
 })
 
 export const requireAdmin = (req, _, next) => {
@@ -45,17 +45,17 @@ export const requireProjectLead = asyncHandler(async (req, _, next) => {
     if (!project)
         throw new ApiError(404, "Project not found");
 
-    const isOwner =
-        project.owner.toString() === req.user._id.toString();
+    // const isOwner = project.owner === req.user?._id
+
+    const isOwner = project.owner.toString() === req.user?._id.toString()
 
     const isLead = await ProjectMember.exists({
         projectID,
-        userID: req.user._id,
+        userID: req.user?._id,
         role: "lead"
     });
 
-    if (!isOwner && !isLead)
-        throw new ApiError(403, "Lead access required");
-
+    if(!isLead && !isOwner) throw new ApiError(404, "You need to be eithr owner or lead of this project to make changes")
+    
     next();
 });

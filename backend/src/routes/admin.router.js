@@ -5,7 +5,9 @@ import {
     addMembers,
     removeProjectLead,
     removeDev,
-    deleteProject
+    deleteProject,
+    allUsers,
+    addProjectLead
 } from "../controllers/admin.controller.js";
 import { verifyJWT, requireAdmin } from "../middleware/auth.middleware.js";
 
@@ -21,14 +23,20 @@ router.use(verifyJWT, requireAdmin);
 // GET /api/v1/projects/admin
 router.get("/", getAllProjects);
 
+// GET all users
+// GET/api/v1/admin/all-users
+router.get("/all-users", allUsers)
+
 // CREATE a project
 // POST /api/v1/projects/admin
 router.post("/", createProject);
 
+// ADD a lead to a project
+router.post("/:projectID/add-lead", addProjectLead);
+
+
 // ADD a member (dev) to a project
-// POST /api/v1/projects/add-member
-// FIXME: Change the url, use req.params to add dev to project
-router.post("/add-dev", addMembers);
+router.post("/:projectID/add-dev", addMembers);
 
 // REMOVE project lead (owner becomes new lead)
 // PATCH /api/v1/projects/admin/remove-lead

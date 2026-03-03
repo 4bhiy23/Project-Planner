@@ -5,10 +5,12 @@ const milestoneSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    isCompleted: {
-        type: Boolean,
-        default: false
-    }
-})
+    tasks: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Task"
+        }
+    ]
+},{timestamps: true})
 
-export const Milestones = mongoose.model("Milestones", milestoneSchema)
+export const Milestone = mongoose.model("Milestone", milestoneSchema)

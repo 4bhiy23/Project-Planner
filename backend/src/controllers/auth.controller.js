@@ -3,6 +3,7 @@ import { User } from "../models/userModel.js";
 import { ApiError } from "../utils/ApiErrors.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../middleware/AsyncHandler.js";
+import jwt from "jsonwebtoken"
 
 const generateAccessAndRefreshTokens = async (userId) => {
     const user = await User.findById(userId)
@@ -140,15 +141,12 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
-    user.refreshToken = refreshToken
-    await user.save({ validateBeforeSave: false })
 
     return res
         .status(200)
         .cookie("accessToken", accessToken, CookieOptions)
-        .cookie("refreshToken", refreshToken, CookieOptions)
         .json(
-            new ApiResponse(200, { refreshToken, accessToken }, "Access Token renewed!")
+            new ApiResponse(200, {}, "Access Token renewed!")
         )
 })
 

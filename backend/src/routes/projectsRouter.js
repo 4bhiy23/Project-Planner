@@ -1,10 +1,10 @@
 import express from "express";
-import { getMyProjects, getProjectByID } from "../controllers/project.controller.js";
+import { addMilestone, deleteMilestone, getMyProjects, getProjectByID } from "../controllers/project.controller.js";
 import { verifyJWT, requireProjectLead, requireAdmin } from "../middleware/auth.middleware.js";
 import { addMembers } from "../controllers/admin.controller.js";
 
 const router = express.Router();
-
+router.use(verifyJWT)
 // -----------------------------
 // GET all projects of the logged-in user
 // GET /api/v1/projects/my
@@ -23,6 +23,12 @@ router.get("/:projectID", verifyJWT, getProjectByID);
 // -----------------------------
 // TODO: Test this endpoint
 router.post("/:projectID/add-dev", requireProjectLead ,addMembers);
+
+
+
+router.post("/:projectID/add-milestone", requireProjectLead, addMilestone)
+
+router.delete("/:projectID/delete-milestone/:milestoneID", requireProjectLead, deleteMilestone)
 
 // -----------------------------
 // Optional future routes you can add
