@@ -1,69 +1,77 @@
 import mongoose from "mongoose";
-import { Project } from "../models/projectModel.js";
-import { Milestones } from "../models/milestoneModel.js"
 import dotenv from "dotenv";
-dotenv.config();;
+import { User } from "../src/models/userModel.js";
+import { Project } from "../src/models/projectModel.js";
+import { ProjectMember } from "../src/models/projectMemberModel.js";
 
-import connectDB from "../DB/db.js"
-connectDB()
+dotenv.config();
 
-const seedDB = async () => {
+// MongoDB connection
+const connectDB = async () => {
   try {
-    await Project.deleteMany({});
-    await Milestones.deleteMany({});
-
-    // Create milestones first
-    const milestoneDocs = await Milestones.insertMany([
-      { title: "Design UI", isCompleted: true },
-      { title: "Setup Backend API", isCompleted: true },
-      { title: "Integrate Frontend with API", isCompleted: false },
-      { title: "Add Authentication", isCompleted: false },
-      { title: "Deployment", isCompleted: false }
-    ]);
-
-    // Create projects referencing milestones
-    await Project.insertMany([
-      {
-        title: "Milestone Tracker App",
-        description: "A full-stack app to manage project milestones",
-        startDate: new Date("2026-02-01"),
-        endDate: new Date("2026-03-30"),
-        status: "ONGOING",
-        milestones: [
-          milestoneDocs[0]._id,
-          milestoneDocs[1]._id,
-          milestoneDocs[2]._id
-        ]
-      },
-      {
-        title: "Portfolio Website",
-        description: "Personal developer portfolio",
-        startDate: new Date("2026-01-10"),
-        endDate: new Date("2026-02-15"),
-        status: "COMPLETED",
-        milestones: [
-          milestoneDocs[0]._id,
-          milestoneDocs[4]._id
-        ]
-      },
-      {
-        title: "Experimental AI Tool",
-        description: "Side project exploring AI APIs",
-        startDate: new Date("2026-02-15"),
-        status: "DROPPED",
-        milestones: [
-          milestoneDocs[3]._id
-        ]
-      }
-    ]);
-
-    console.log("Database seeded successfully 🌱");
-    process.exit(0);
-
-  } catch (error) {
-    console.error(error);
+    await mongoose.connect(`${process.env.MONGO_URI}/${process.env.DB_NAME}`);
+    console.log("MongoDB connected for seeding...");
+  } catch (err) {
+    console.error(err);
     process.exit(1);
   }
 };
 
-seedDB();
+// Seed data
+const seed = async () => {
+  try {
+    await mongoose.connection.dropDatabase();
+    console.log("Database cleared");
+
+    // --- Users ---
+    const users = await User.create([
+      { username: "Alice Admin", email: "admin@example.com", password: "password123", role: "admin" },
+      { username: "Bob Lead", email: "lead@example.com", password: "password123", role: "user" },
+      { username: "Charlie Dev", email: "dev1@example.com", password: "password123", role: "user" },
+      { username: "Diana Dev", email: "dev2@example.com", password: "password123", role: "user" }
+    ]);
+
+    console.log("Users created");
+
+    // --- Projects ---
+    const projects = await Project.create([
+      {
+        title: "Project Alpha",
+        description: "First project for testing",
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        status: "ONGOING",
+        owner: users[0]._id
+      },
+      {
+        title: "Project Beta",
+        description: "Second project for testing",
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+        status: "ONGOING",
+        owner: users[0]._id
+      }
+    ]);
+
+    console.log("Projects created");
+
+    // --- Project Members ---
+    await ProjectMember.create([
+      { projectID: projects[0]._id, userID: users[1]._id, role: "lead" },
+      { projectID: projects[0]._id, userID: users[2]._id, role: "dev" },
+      { projectID: projects[0]._id, userID: users[3]._id, role: "dev" },
+      { projectID: projects[1]._id, userID: users[1]._id, role: "lead" },
+      { projectID: projects[1]._id, userID: users[3]._id, role: "dev" }
+    ]);
+
+    console.log("Project members assigned");
+
+    console.log("Seeding complete!");
+    process.exit();
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  }
+};
+
+connectDB().then(seed);

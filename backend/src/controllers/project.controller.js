@@ -21,7 +21,7 @@ const getMyProjects = asyncHandler(async (req, res) => {
             }
         },
         {
-            $unwind: "projectDetails"
+            $unwind: "$projectDetails"
         }
     ])
 

@@ -26,8 +26,9 @@ router.get("/", getAllProjects);
 router.post("/", createProject);
 
 // ADD a member (dev) to a project
-// POST /api/v1/projects/admin/add-member
-router.post("/add-member", addMembers);
+// POST /api/v1/projects/add-member
+// FIXME: Change the url, use req.params to add dev to project
+router.post("/add-dev", addMembers);
 
 // REMOVE project lead (owner becomes new lead)
 // PATCH /api/v1/projects/admin/remove-lead

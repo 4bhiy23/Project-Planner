@@ -48,26 +48,27 @@ const createProject = asyncHandler(async (req, res) => {
 })
 
 // TODO: add multiple devs at once
+// FIXME: Change the parameters to add dev, Use req.params to add member to a project
 const addMembers = asyncHandler(async (req, res) => {
-    const { projectID, memberID } = req.body
+    const { projectID, userID } = req.body
     if (!projectID) throw new ApiError(400, "Project ID not provided")
-    if (!memberID) throw new ApiError(400, "Member ID not provided")
+    if (!userID) throw new ApiError(400, "Member ID not provided")
 
     // Check if project exists
     const project = await Project.findById(projectID);
     if (!project) throw new ApiError(404, "Project not found");
 
     // Check if member exists
-    const user = await User.findById(memberID);
+    const user = await User.findById(userID);
     if (!user) throw new ApiError(404, "User not found");
 
     // Prevent duplicate membership
-    const existing = await ProjectMember.findOne({ projectID, userID: memberID });
+    const existing = await ProjectMember.findOne({ projectID, userID: userID });
     if (existing) throw new ApiError(400, "User is already a member of this project");
 
 
     const newMembership = await ProjectMember.create({
-        userID: memberID,
+        userID: userID,
         projectID: projectID,
         role: "dev"
     })
@@ -78,39 +79,53 @@ const addMembers = asyncHandler(async (req, res) => {
 })
 
 const removeProjectLead = asyncHandler(async (req, res) => {
-    // TODO: remove the existing lead from the membership model and make the project the owner of the project
-    const { memberID, projectID } = req.body
-    if (!memberID || !projectID) throw new ApiError(400, "member or project ID missing")
+    const { projectID } = req.body;
 
-    const projectLead = await ProjectMember.findOne({
+    if (!projectID) {
+        throw new ApiError(400, "Project ID is required");
+    }
+
+    // Find existing lead for the project
+    const existingLead = await ProjectMember.findOne({
         projectID,
-        userID: memberID,
         role: "lead"
     });
 
-    if (!projectLead) throw new ApiError(404, "Project Lead for this project was not found")
+    if (!existingLead) {
+        throw new ApiError(404, "No lead found for this project");
+    }
 
-    await ProjectMember.deleteOne({ _id: projectLead._id });
+    // Remove current lead
+    await ProjectMember.deleteOne({ _id: existingLead._id });
 
-    const project = await Project.findById(projectID)
-    if (!project) throw new ApiError(404, "Project not found")
+    // Fetch project
+    const project = await Project.findById(projectID);
+    if (!project) {
+        throw new ApiError(404, "Project not found");
+    }
 
+    // Assign owner as new lead
     const newLead = await ProjectMember.create({
         userID: project.owner,
         projectID,
         role: "lead"
-    })
-    return res
-        .status(201)
-        .json(new ApiResponse(201, newLead, "Project lead removed and owner assigned as the new Lead"))
-})
+    });
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            newLead,
+            "Existing lead removed and owner assigned as new lead"
+        )
+    );
+});
 
 const removeDev = asyncHandler(async (req, res) => {
-    const { projectID, memberID } = req.body
-    if (!projectID || !memberID) throw new ApiError(400, "Project or Member ID not provided")
+    const { projectID, userID } = req.body
+    if (!projectID || !userID) throw new ApiError(400, "Project or Member ID not provided")
 
     const project = await ProjectMember.findOne({
-        userID: memberID,
+        userID: userID,
         projectID,
         role: "dev"
     })

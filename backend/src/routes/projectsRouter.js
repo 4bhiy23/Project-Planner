@@ -1,6 +1,7 @@
 import express from "express";
 import { getMyProjects, getProjectByID } from "../controllers/project.controller.js";
 import { verifyJWT, requireProjectLead, requireAdmin } from "../middleware/auth.middleware.js";
+import { addMembers } from "../controllers/admin.controller.js";
 
 const router = express.Router();
 
@@ -17,11 +18,16 @@ router.get("/my", verifyJWT, getMyProjects);
 router.get("/:projectID", verifyJWT, getProjectByID);
 
 // -----------------------------
+// POST Add developer to project
+// POST /api/v1/projects/:projectID/add-dev
+// -----------------------------
+// TODO: Test this endpoint
+router.post("/:projectID/add-dev", requireProjectLead ,addMembers);
+
+// -----------------------------
 // Optional future routes you can add
 // -----------------------------
-// router.post("/", verifyJWT, requireAdmin, createProject);
 // router.patch("/:projectID", verifyJWT, requireProjectLead, updateProject);
-// router.delete("/:projectID", verifyJWT, requireAdmin, deleteProject);
 // router.get("/:projectID/members", verifyJWT, requireProjectLead, getProjectMembers);
 // router.post("/:projectID/members", verifyJWT, requireProjectLead, addProjectMember);
 // router.patch("/:projectID/members/:memberID", verifyJWT, requireProjectLead, updateMemberRole);

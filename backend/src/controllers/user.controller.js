@@ -99,11 +99,13 @@ const loginUser = asyncHandler(async (req, res) => {
     user.refreshToken = refreshToken
     await user.save()
 
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+
     return res
         .status(200)
         .cookie("accessToken", accessToken, CookieOptions)
         .cookie("refreshToken", refreshToken, CookieOptions)
-        .json(new ApiResponse(200, { user, accessToken }, "Login Successful"))
+        .json(new ApiResponse(200, loggedInUser, "Login Successful"))
 })
 
 const logoutUser = asyncHandler(async (req, res) => {
