@@ -107,9 +107,33 @@ const deleteMilestone = asyncHandler(async (req, res) => {
 
 })
 
+const editMilestone = asyncHandler(async (req, res) => {
+    const { projectID, milestoneID } = req.params
+    if(!projectID || !milestoneID) throw new ApiError(400, "Project or milestone ID not provided")
+
+    const { newTitle } = req.body
+    if(!newTitle) throw new ApiError(400, "New Title not provided")
+        
+    const project = await Project.findById(projectID)
+    if(!project) throw new ApiError(404, "Project not found")
+    
+    const milestone = await Milestone.findById(milestoneID)
+    if(!milestone) throw new ApiError(404, "Milestone not found")
+
+    milestone.title = newTitle
+    await milestone.save()
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, milestone, "Title updated"))
+})
+
+
+
 export {
     getMyProjects,
     getProjectByID,
     addMilestone,
-    deleteMilestone
+    deleteMilestone,
+    editMilestone
 }
