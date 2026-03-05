@@ -5,15 +5,11 @@ const taskSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    description: String,
+    desc: String,
     status: {
         type: String,
         enum: ["todo", "in-progress", "done"],
         default: "todo"
-    },
-    projectID: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Project"
     },
     milestoneID: {
         type: mongoose.Schema.Types.ObjectId,
@@ -27,4 +23,4 @@ const taskSchema = new mongoose.Schema({
     }
 }, {timestamps: true})
 
-export const Task = new mongoose.Schema("Task", taskSchema)
+export const Task = new mongoose.model("Task", taskSchema)

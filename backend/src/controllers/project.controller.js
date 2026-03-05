@@ -2,6 +2,8 @@ import { asyncHandler } from "../middleware/AsyncHandler.js";
 import { Milestone } from "../models/milestoneModel.js";
 import { ProjectMember } from "../models/projectMemberModel.js";
 import { Project } from "../models/projectModel.js";
+import { Task } from "../models/taskModel.js";
+import { User } from "../models/userModel.js";
 import { ApiError } from "../utils/ApiErrors.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
@@ -36,6 +38,7 @@ const getMyProjects = asyncHandler(async (req, res) => {
         }
     ])
 
+
     return res
         .status(200)
         .json(new ApiResponse(200, projects, "User's project fetched"))
@@ -45,7 +48,23 @@ const getProjectByID = asyncHandler(async (req, res) => {
     const { projectID } = req.params
     if (!projectID) throw new ApiError(400, "Project ID not provided")
 
-    const project = await Project.findById(projectID)
+    // const project = await Project.findById(projectID)
+    //     .populate({ path: "owner", select: "username -_id" })
+    //     .populate({ path: "milestones", select: "_id title tasks" })
+
+    // GPT
+    let project = await Project.findById(projectID)
+        .populate({ path: "owner", select: "username -_id" })
+        .populate({
+            path: "milestones",
+            select: "_id title",
+            populate: {
+                path: "tasks",  // virtual field we just defined
+                select: "title status assignedTo desc",
+                populate: { path: "assignedTo", select: "username -_id" }
+            }
+        })
+
     if (!project) throw new ApiError(404, "Project not found")
 
     const hasAccess =
@@ -59,9 +78,24 @@ const getProjectByID = asyncHandler(async (req, res) => {
         throw new ApiError(403, "Not authorized to view this project");
     }
 
+    const lead = await ProjectMember.findOne({ projectID, role: "lead" })
+        .populate({ path: "userID", select: "username -_id" })
+    const leadList = {
+        _id: lead._id,
+        username: lead.userID?.username
+    }
+
+    const devs = await ProjectMember.find({ projectID, role: "dev" }).populate({ path: "userID", select: "username -_id" })
+    const devsList = devs.map(e => ({
+        _id: e._id,
+        username: e.userID?.username
+    }));
+
     return res
         .status(200)
-        .json(new ApiResponse(200, project, "Project fetched"))
+        .json(new ApiResponse(200, { project, Lead: leadList, Devs: devsList }, "Project fetched"))
+
+
 })
 
 const addMilestone = asyncHandler(async (req, res) => {
@@ -109,31 +143,69 @@ const deleteMilestone = asyncHandler(async (req, res) => {
 
 const editMilestone = asyncHandler(async (req, res) => {
     const { projectID, milestoneID } = req.params
-    if(!projectID || !milestoneID) throw new ApiError(400, "Project or milestone ID not provided")
+    if (!projectID || !milestoneID) throw new ApiError(400, "Project or milestone ID not provided")
 
     const { newTitle } = req.body
-    if(!newTitle) throw new ApiError(400, "New Title not provided")
-        
+    if (!newTitle) throw new ApiError(400, "New Title not provided")
+
     const project = await Project.findById(projectID)
-    if(!project) throw new ApiError(404, "Project not found")
-    
+    if (!project) throw new ApiError(404, "Project not found")
+
     const milestone = await Milestone.findById(milestoneID)
-    if(!milestone) throw new ApiError(404, "Milestone not found")
+    if (!milestone) throw new ApiError(404, "Milestone not found")
 
     milestone.title = newTitle
     await milestone.save()
 
     return res
-    .status(200)
-    .json(new ApiResponse(200, milestone, "Title updated"))
+        .status(200)
+        .json(new ApiResponse(200, milestone, "Title updated"))
 })
 
+const addTask = asyncHandler(async (req, res) => {
+    const { milestoneID } = req.params
+    if (!milestoneID) throw new ApiError(400, "Milestone ID not provided")
 
+    const milestone = await Milestone.findById(milestoneID)
+    if (!milestone) throw new ApiError(404, "Milestone not found")
+
+    const { title, desc, status, assignedTo } = req.body
+    if (!title || !status || !assignedTo) throw new ApiError(400, "All required fields not provided")
+
+    const assignedToExists = await User.findById(assignedTo)
+    if (!assignedToExists) throw new ApiError(404, "User you are trying to assign this task does not exists")
+
+    const task = await Task.create({
+        title,
+        desc,
+        status,
+        assignedTo
+    })
+
+    return res
+        .status(201)
+        .json(new ApiResponse(201, task, "Task created sucessfully"))
+})
+
+const deleteTask = asyncHandler(async (req, res) => {
+    const { projectID , taskID } = req.params
+    if(!taskID) throw new ApiError(400, "Task ID not provided")
+    
+    const task = await Task.findById(taskID)
+    if(!task) throw new ApiError(404, "Task not found")
+    
+    await task.deleteOne()
+    return res
+    .status(200)
+    .json(new ApiResponse(200, task, "Task deleted successfully"))
+})
 
 export {
     getMyProjects,
     getProjectByID,
     addMilestone,
     deleteMilestone,
-    editMilestone
+    editMilestone,
+    addTask,
+    deleteTask
 }

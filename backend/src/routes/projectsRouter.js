@@ -1,5 +1,5 @@
 import express from "express";
-import { addMilestone, deleteMilestone, editMilestone, getMyProjects, getProjectByID } from "../controllers/project.controller.js";
+import { addMilestone, addTask, deleteMilestone, deleteTask, editMilestone, getMyProjects, getProjectByID } from "../controllers/project.controller.js";
 import { verifyJWT, requireProjectLead, requireAdmin } from "../middleware/auth.middleware.js";
 import { addMembers } from "../controllers/admin.controller.js";
 
@@ -33,6 +33,14 @@ router.delete("/:projectID/delete-milestone/:milestoneID", requireProjectLead, d
 
 // Edit milestone
 router.patch("/:projectID/edit-milestone/:milestoneID", requireProjectLead, editMilestone)
+
+
+router.post("/:projectID/milestone/:milestoneID/add-task", requireProjectLead, addTask)
+
+// Delete task
+router.delete("/:projectID/task/:taskID",  deleteTask)
+
+
 
 
 
