@@ -170,7 +170,7 @@ const addTask = asyncHandler(async (req, res) => {
     if (!milestone) throw new ApiError(404, "Milestone not found")
 
     const { title, desc, status, assignedTo } = req.body
-    if (!title || !status || !assignedTo) throw new ApiError(400, "All required fields not provided")
+    if (!title || !assignedTo) throw new ApiError(400, "All required fields not provided")
 
     const assignedToExists = await User.findById(assignedTo)
     if (!assignedToExists) throw new ApiError(404, "User you are trying to assign this task does not exists")
@@ -179,7 +179,8 @@ const addTask = asyncHandler(async (req, res) => {
         title,
         desc,
         status,
-        assignedTo
+        assignedTo,
+        milestoneID
     })
 
     return res
@@ -200,6 +201,26 @@ const deleteTask = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, task, "Task deleted successfully"))
 })
 
+const updateTaskStatus = asyncHandler(async (req, res) => {
+    const { taskID } = req.params
+    if(!taskID) throw new ApiError(400, "Task ID not provided")
+    
+    const task = await Task.findById(taskID)
+    if(!task) throw new ApiError(404, "Task not found")
+    
+    const { status } = req.body
+    if(!status) throw new ApiError(400, "Task status not provided")
+    
+    if(status !== "todo" && status !== "in-progress" && status !== "done") throw new ApiError(400, "Invalid status for task")
+    
+    task.status = status
+    await task.save()
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, task, "Task status updated"))
+})
+
 export {
     getMyProjects,
     getProjectByID,
@@ -207,5 +228,6 @@ export {
     deleteMilestone,
     editMilestone,
     addTask,
-    deleteTask
+    deleteTask,
+    updateTaskStatus
 }
