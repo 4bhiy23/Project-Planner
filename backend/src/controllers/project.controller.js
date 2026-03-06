@@ -9,7 +9,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 
 const getMyProjects = asyncHandler(async (req, res) => {
     const userId = req.user?._id
-    const projects = await ProjectMember.aggregate([
+    let projects = await ProjectMember.aggregate([
         {
             $match: {
                 userID: userId
@@ -37,10 +37,10 @@ const getMyProjects = asyncHandler(async (req, res) => {
             }
         }
     ])
-
-
+    
     return res
         .status(200)
+        
         .json(new ApiResponse(200, projects, "User's project fetched"))
 })
 

@@ -7,7 +7,8 @@ import {
     removeDev,
     deleteProject,
     allUsers,
-    addProjectLead
+    addProjectLead,
+    userDetails
 } from "../controllers/admin.controller.js";
 import { verifyJWT, requireAdmin } from "../middleware/auth.middleware.js";
 
@@ -26,6 +27,10 @@ router.get("/", getAllProjects);
 // GET all users
 // GET/api/v1/admin/all-users
 router.get("/all-users", allUsers)
+
+// GET user details
+// GET /api/v1/admin/user/:userID
+router.get("/user/:userID", userDetails)
 
 // CREATE a project
 // POST /api/v1/projects/admin

@@ -6,7 +6,18 @@ import { ApiError } from "../utils/ApiErrors.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 const getAllProjects = asyncHandler(async (req, res) => {
-    const projects = await Project.find().populate("milestones")
+    const projects = await Project.find()
+        .populate({
+            path: "milestones",
+            populate: {
+                path: "tasks",
+                select: "_id title desc status assignedTo",
+                populate: { path: "assignedTo", select: "username -_id" }
+
+            }
+        });
+
+
     return res
         .status(200)
         .json(new ApiResponse(200, projects, "Fetched all projects"))
@@ -80,16 +91,16 @@ const addMembers = asyncHandler(async (req, res) => {
 
 const addProjectLead = asyncHandler(async (req, res) => {
     const { projectID } = req.params
-    if(!projectID) throw new ApiError(400, "Projct ID not provided")
+    if (!projectID) throw new ApiError(400, "Projct ID not provided")
 
     const project = await Project.findById(projectID)
-    if(!project) throw new ApiError(404,"Project not found")
+    if (!project) throw new ApiError(404, "Project not found")
 
-    // const existingLead = await ProjectMember.exists({
-    //     projectID,
-    //     role: "lead"
-    // })
-    // if(existingLead) throw new ApiError(400, "This project has a lead assigned to it")
+    const existingLead = await ProjectMember.exists({
+        projectID,
+        role: "lead"
+    })
+    if (existingLead) throw new ApiError(400, "This project has a lead assigned to it")
 
     const newLead = await ProjectMember.create({
         userID: req.user?._id,
@@ -98,8 +109,8 @@ const addProjectLead = asyncHandler(async (req, res) => {
     })
 
     return res
-    .status(200)
-    .json(new ApiResponse(200, newLead,"User assigned as new lead"))
+        .status(200)
+        .json(new ApiResponse(200, newLead, "User assigned as new lead"))
 })
 
 const removeProjectLead = asyncHandler(async (req, res) => {
@@ -178,11 +189,35 @@ const deleteProject = asyncHandler(async (req, res) => {
     );
 })
 
-const allUsers = asyncHandler(async(req, res) => {
-    const users = await User.find().select("-password -refreshToken")
+const allUsers = asyncHandler(async (req, res) => {
+    const users = await User.find().select("-password -refreshToken -createdAt -updatedAt")
     return res
-    .status(200)
-    .json(new ApiResponse(200, users, "Fetched all users"))
+        .status(200)
+        .json(new ApiResponse(200, users, "Fetched all users"))
+})
+
+const userDetails = asyncHandler(async (req, res) => {
+    const { userID } = req.params
+    if (!userID) throw new ApiError(400, "User ID not provided")
+
+    // User details
+    const user = await User.findById(userID).select("-password -refreshToken -createdAt -updatedAt")
+    if (!user) throw new ApiError(404, "User not found")
+
+    // User projects
+    const memberships = await ProjectMember.find({ userID })
+        .populate({path: "projectID", select: "title desc status owner"})
+
+    const projects = memberships.map(m => m.projectID)
+
+
+
+
+
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, { user: user, projects: projects }, "User details fetched"))
 })
 
 export {
@@ -193,5 +228,6 @@ export {
     removeDev,
     deleteProject,
     allUsers,
-    addProjectLead
+    addProjectLead,
+    userDetails
 }
